@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>todo</title>
+        <style>
+            .completed{
+                font-size: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class='container'></div>
+        <script>
+            var log = console.log.bind(console)
+
+            var e = function(selector) {
+                var element = document.querySelector(selector)
+                if (element == null) {
+                    var s = `元素没找到，选择器 ${selector} 没有找到或者 js 没有放在 body 里`
+                    alert(s)
+                } else {
+                    return element
+                }
+            }
+
+            var appendHtml = function(element, html) {
+                element.insertAdjacentHTML('beforeend', html)
+            }
+
+            var find = function(element, selector) {
+                var e = element.querySelector(selector)
+                if (e == null) {
+                    var s = `元素没找到，选择器 ${selector} 没有找到或者 js 没有放在 body 里`
+                    alert(s)
+                } else {
+                    return e
+                }
+            }
+
+            var ajax = function(method, path, data, callback) {
+                var r = new XMLHttpRequest()
+                r.open(method, path, true)
+                r.setRequestHeader('Content-Type', 'application/json')
+                r.onreadystatechange = () => {
+                    if (r.readyState == 4) {
+                        callback(r.response)
+                    }
+                }
+                if (method == 'POST') {
+                    data = JSON.stringify(data)
+                    r.send(data)
+                } else {
+                    r.send()
+                }
+
+            }
+
+            var apiTodoAll = (callback) => {
+                var method = 'GET'
+                var path = '/todo/all'
+                var data = ''
+                ajax(method, path, data, callback)
+            }
+
+            var apiTodoAdd = (task, callback) => {
+                var method = 'POST'
+                var path = '/todo/add'
+                var data = {
+                    task: task,
+                }
+                ajax(method, path, data, callback)
+            }
+
+            var apiTodoDelete = (id, callback) => {
+                var method = 'GET'
+                var path = '/todo/delete/' + id
+                var data = {}
+                ajax(method, path, data, callback)
+            }
+
+            var apiTodoEdit = (id, callback) => {
+                var method = 'GET'
+                var path = '/todo/edit/' + id
+                var data = {}
+                ajax(method, path, data, callback)
+            }
+
+            var todoDiv = function(todo) {
+                var t = `
+                <div class='todoAll'>
+                    ${todo.task}
+                </div>
+                `
+                return t
+            }
+
+            var todoDiv1 = function(id, todo) {
+                var t = `
+                <div class='todo-container'>
+                    <span class='content'>${todo}</span>
+                    <span class='id'>${id}</span>
+                    <input type='button' class='delete' value='delete'>
+                    <input type='button' class='edit' value='edit'>
+                </div>
+                `
+                return t
+            }
+
+            var todosDiv = function(todos) {
+                var container = e('.container')
+                for (var i = 0; i < todos.length; i++) {
+                    var todo = todoDiv(todos[i])
+                    appendHtml(container, todo)
+                }
+            }
+
+            var todoAll = function() {
+                apiTodoAll(function(r) {
+                    var r = JSON.parse(r)
+                    todosDiv(r)
+                })
+            }
+
+            var todoInput = function() {
+                var container = e('.container')
+                var html = `
+                <div class='form'>
+                    <input class='input'>
+                    <input type='button' class='button' value="add">
+                </div>
+                `
+                appendHtml(container, html)
+            }
+
+            var todoAdd = function() {
+                var container = e('.container')
+                var button = find(container, '.button')
+                button.addEventListener('click', function() {
+                    // log('click')
+                    var input = find(container, '.input')
+                    var value = input.value
+                    apiTodoAdd(value, function(r) {
+                        // log('add')
+                        var r = JSON.parse(r)
+                        // log(r)
+                        var id = r[r.length - 1].id
+                        // log('add', id)
+                        var html = todoDiv1(id, value)
+                        appendHtml(container, html)
+                    })
+                })
+            }
+
+            var todoDelete = function(id) {
+                var container = e('.container')
+                container.addEventListener('click', function() {
+                    var self = event.target
+                    if (self.classList.contains("delete")) {
+                        var container = self.closest('.todo-container')
+                        var idSpan = find(container, ".id")
+                        log(idSpan)
+                        var id = idSpan.innerHTML
+                        log(id)
+                        apiTodoDelete(id, function() {
+                            container.remove()
+                        })
+                    }
+                })
+            }
+
+            var todoEdit = function(id) {
+                var container = e('.container')
+                container.addEventListener('click', function() {
+                    var self = event.target
+                    if (self.classList.contains("edit")) {
+                        var container = self.closest('.todo-container')
+                        var idSpan = find(container, ".id")
+                        var id = idSpan.innerHTML
+                        apiTodoEdit(id, function() {
+                            var content = find(container, ".content")
+                            content.classList.toggle('completed')
+                        })
+                    }
+                })
+            }
+
+            var __main = () => {
+                todoAll()
+                todoInput()
+                todoAdd()
+                todoDelete()
+                todoEdit()
+            }
+
+            __main()
+        </script>
+    </body>
+</html>
